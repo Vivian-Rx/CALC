@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pediatric Dose Calc (Demo)</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width:800px; margin:2rem auto; padding:1rem;}
+    .card{border:1px solid #ddd;padding:1rem;border-radius:8px;margin-bottom:1rem;}
+    label{display:block;margin-top:.5rem}
+    input{padding:.4rem;margin-top:.25rem;width:120px}
+    button{margin-top:1rem;padding:.6rem 1rem}
+    .result{background:#fafafa;padding:.6rem;border-radius:6px;margin-top:.6rem}
+    small.disclaimer{color:#800;display:block;margin-top:.6rem}
+  </style>
+</head>
+<body>
+  <h1>Pediatric Dose Calculator — Demo</h1>
+  <div class="card">
+    <label>Weight (kg)
+      <input id="weight" type="number" step="0.1" min="0.1" value="12">
+    </label>
+    <label>Age (years)
+      <input id="age" type="number" step="0.1" min="0" value="2">
+    </label>
+    <label>Concentration examples (optional)
+      <div>Paracetamol syrup mg/mL: <input id="conc_par" type="number" step="1" value="24"> mg/mL</div>
+      <div>Ibuprofen syrup mg/mL: <input id="conc_ibu" type="number" step="1" value="100"> mg/5mL</div>
+    </label>
+    <button id="calc">Calculate</button>
+    <small class="disclaimer">Demo app: not clinical. Validate rules before clinical use.</small>
+  </div>
+
+  <div id="out" class="card">
+    <strong>Results will appear here</strong>
+  </div>
+
+<script>
+function roundNearest(x, step=5){
+  // round to nearest step mg (helps match available tablet sizes)
+  return Math.round(x/step)*step;
+}
+
+document.getElementById('calc').addEventListener('click', ()=> {
+  const w = parseFloat(document.getElementById('weight').value);
+  const age = parseFloat(document.getElementById('age').value);
+  const concPar = parseFloat(document.getElementById('conc_par').value) || 24; // mg/mL
+  const concIbu_5ml = parseFloat(document.getElementById('conc_ibu').value) || 100; // mg per 5 mL
+
+  if (!w || w <= 0) {
+    alert('Please enter valid weight');
+    return;
+  }
+
+  // --- Paracetamol (demo: 15 mg/kg) ---
+  const par_mg = 15 * w;
+  const par_mg_rounded = Math.min(roundNearest(par_mg, 10), 1000); // cap single dose 1000mg
+  const par_volume_ml = (par_mg_rounded / concPar).toFixed(1);
+
+  // --- Ibuprofen (demo uses 10 mg/kg, cap 400 mg single dose) ---
+  const ibu_mg = 10 * w;
+  const ibu_mg_rounded = Math.min(roundNearest(ibu_mg, 10), 400);
+  const ibu_volume_5ml = (ibu_mg_rounded / concIbu_5ml) * 5; // if conc given as mg per 5mL
+  const ibu_volume_ml = ibu_volume_5ml.toFixed(1);
+
+  // --- Amoxicillin: show 20-45 mg/kg/day examples and per-dose for q8h (3x/day) or q12h (2x/day) ---
+  const amox_low = 20 * w;
+  const amox_high = 45 * w;
+  const amox_perday_example = Math.round((amox_low + amox_high)/2);
+  const amox_q8 = Math.round(amox_perday_example / 3);
+  const amox_q12 = Math.round(amox_perday_example / 2);
+
+  // build output
+  const out = document.getElementById('out');
+  out.innerHTML = `
+    <h3>Calculated doses (demo)</h3>
+    <div class="result"><strong>Paracetamol</strong><br>
+      Rule used: 15 mg/kg per dose (demo).<br>
+      Dose: <strong>${par_mg_rounded} mg</strong> per dose (≈ ${par_volume_ml} mL of ${concPar} mg/mL)<br>
+      Interval: every ≥4 hours; max 4 doses in 24 h (demo).
+      </div>
+
+    <div class="result"><strong>Ibuprofen</strong><br>
+      Rule used: 10 mg/kg per dose (demo).<br>
+      Dose: <strong>${ibu_mg_rounded} mg</strong> per dose (≈ ${ibu_volume_ml} mL based on ${concIbu_5ml} mg/5mL).<br>
+      Interval: every 6–8 hours (demo). Max single dose capped at 400 mg in this demo.
+    </div>
+
+    <div class="result"><strong>Amoxicillin</strong><br>
+      Typical pediatric range: 20–45 mg/kg/day (depends on indication).<br>
+      Total daily range: <strong>${Math.round(amox_low)}–${Math.round(amox_high)} mg/day</strong>.<br>
+      Example per-dose (avg daily divided): q8h ≈ <strong>${amox_q8} mg</strong> every 8 h, or q12h ≈ <strong>${amox_q12} mg</strong> every 12 h.
+    </div>
+
+    <small style="color:#800">Clinical disclaimer: This is a demo calculator. Do NOT use for prescribing without local guideline validation and clinician sign-off.</small>
+  `;
+});
+</script>
+</body>
+</html>
